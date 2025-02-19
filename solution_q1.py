@@ -60,7 +60,7 @@ def read_input_file(file_path='input.txt'):  #basically just reads the puzzle st
     with open(file_path, 'r') as file:
         return file.read().strip().split(',') or None
     
-# Define move index shifts globally (so it doesn't get redefined every function call)
+# Defining move index shifts globally (so it doesn't get redefined every function call)
 MOVE_INDICES = {'D': -3, 'U': 3, 'R': -1, 'L': 1}
 
 def format_solution_path(state, path):
@@ -96,16 +96,16 @@ else:
 
 #BFS
 def bfs(initial_state):
-    queue = deque([(initial_state, [])])  # BFS uses a queue (FIFO)
+    queue = deque([(initial_state, [])])  #BFS uses a queue for the FIFO order
     visited = set()
 
     while queue:
         state, path = queue.popleft()
-        state_tuple = tuple(state)  # Store tuple version once
+        state_tuple = tuple(state)  # To store tuple version once
         visited.add(state_tuple)
 
-        if state_tuple == goal_state:  # Compare with goal state
-            return path  # Found solution, return path
+        if state_tuple == goal_state:  #comparin with goal state
+            return path  # after finding the solution, return path
 
         for move, new_state in get_successors(state):  
             new_state_tuple = tuple(new_state)
@@ -114,26 +114,66 @@ def bfs(initial_state):
 
     return None  # No solution found
 
-# Read initial state from file
+# Reading initial state from file
 initial_state = read_input_file('input.txt')
 
 # Execute BFS
 solution_path_bfs = bfs(initial_state)
 
-# If BFS finds a solution, format it
+# If BFS finds a solution then format it
 if solution_path_bfs:
-    adjusted_solution_path_bfs = [DIRECTION_MAPPING[move] for move in solution_path_bfs]  # Convert moves
-    formatted_solution_bfs = format_solution_path(initial_state.copy(), adjusted_solution_path_bfs)  # Format path
+    adjusted_solution_path_bfs = [DIRECTION_MAPPING[move] for move in solution_path_bfs]  #Convert moves
+    formatted_solution_bfs = format_solution_path(initial_state.copy(), adjusted_solution_path_bfs)  #Format path
     formatted_solution_output_bfs = f"The solution of Q1.1.b is:\n{formatted_solution_bfs}"
 else:
     formatted_solution_output_bfs = "No solution found with BFS"
 
+import heapq
+
+#This is for performing Uniform Cost Search
+def ucs(initial_state):
+    frontier = []  #the priority queue
+    heapq.heappush(frontier, (0, initial_state, []))  #(cost, state, path)
+    visited_cost = {}  # Dictionary to track the lowest cost to reach each state
+
+    while frontier:
+        cost, state, path = heapq.heappop(frontier)
+        state_tuple = tuple(state)  #To store tuple version once
+
+        # If this state has already been found at a lower costthen skipping it
+        if state_tuple in visited_cost and visited_cost[state_tuple] <= cost:
+            continue
+        visited_cost[state_tuple] = cost
+
+        if state_tuple == goal_state:  # Checking if the goal that was stated is reached
+            return path  
+
+        for move, new_state in get_successors(state):
+            new_state_tuple = tuple(new_state)
+            new_cost = cost + 1  # Uniform cost, every move costs 1
+            if new_state_tuple not in visited_cost or new_cost < visited_cost[new_state_tuple]:
+                heapq.heappush(frontier, (new_cost, new_state, path + [move]))
+
+    return None  #If no solution found
+
+# For executing Uniform Cost Search
+solution_path_ucs = ucs(initial_state)
+
+# If UCS finds a solution then format it
+if solution_path_ucs:
+    adjusted_solution_path_ucs = [DIRECTION_MAPPING[move] for move in solution_path_ucs]
+    formatted_solution_ucs = format_solution_path(initial_state.copy(), adjusted_solution_path_ucs)
+    formatted_solution_output_ucs = f"The solution of Q1.1.c is:\n{formatted_solution_ucs}"
+else:
+    formatted_solution_output_ucs = "No solution found with UCS"
+    
 
 
 
 
 print(formatted_solution_output_dfs) #DFS
 print(formatted_solution_output_bfs) #BFS
+print(formatted_solution_output_ucs) #UCS
 
 
 
