@@ -2,6 +2,7 @@ from collections import deque
 
 goal_state=('_','1','2','3','4','5','6','7','8') #for final end goal top left willl be empty
 
+#DFS
 def dfs(initial_state, limit=30):
     stack = [(initial_state, [], 0)]  #Stack will include the state, path, and depth
     visited = set()
@@ -92,7 +93,47 @@ else:
     formatted_solution_output_dfs = "No solution found within the depth limit"
 
 
+
+#BFS
+def bfs(initial_state):
+    queue = deque([(initial_state, [])])  # BFS uses a queue (FIFO)
+    visited = set()
+
+    while queue:
+        state, path = queue.popleft()
+        state_tuple = tuple(state)  # Store tuple version once
+        visited.add(state_tuple)
+
+        if state_tuple == goal_state:  # Compare with goal state
+            return path  # Found solution, return path
+
+        for move, new_state in get_successors(state):  
+            new_state_tuple = tuple(new_state)
+            if new_state_tuple not in visited:
+                queue.append((new_state, path + [move]))  # Add to queue
+
+    return None  # No solution found
+
+# Read initial state from file
+initial_state = read_input_file('input.txt')
+
+# Execute BFS
+solution_path_bfs = bfs(initial_state)
+
+# If BFS finds a solution, format it
+if solution_path_bfs:
+    adjusted_solution_path_bfs = [DIRECTION_MAPPING[move] for move in solution_path_bfs]  # Convert moves
+    formatted_solution_bfs = format_solution_path(initial_state.copy(), adjusted_solution_path_bfs)  # Format path
+    formatted_solution_output_bfs = f"The solution of Q1.1.b is:\n{formatted_solution_bfs}"
+else:
+    formatted_solution_output_bfs = "No solution found with BFS"
+
+
+
+
+
 print(formatted_solution_output_dfs) #DFS
+print(formatted_solution_output_bfs) #BFS
 
 
 
