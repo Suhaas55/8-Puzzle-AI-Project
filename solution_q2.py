@@ -2,7 +2,7 @@ from collections import deque
 import heapq
 from math import sqrt
 
-goal_state = ('1','2','3','6','_','4','7','8','5') #for spiral pattern with empty center in middle
+goal_state = ('1','2','3','8','_','4','7','6','5') #for spiral pattern with empty center in middle
 
 #DFS
 def dfs(initial_state, limit=30):
@@ -261,7 +261,7 @@ if solution_path_a_star_sld:
     formatted_solution_a_star_sld = format_solution_path(initial_state.copy(), adjusted_solution_path_a_star_sld)  # Format path
     formatted_solution_output_a_star_sld = f"The solution of Q2.1.e is:\n{formatted_solution_a_star_sld}"
 else:
-    formatted_solution_output_a_star_sld = "No solution found with A* using Straight Line Distance"
+    formatted_solution_output_a_star_sld = "No solution found with A* using thee Straight Line Distance"
 
 
 print(formatted_solution_output_dfs) #DFS
@@ -269,3 +269,212 @@ print(formatted_solution_output_bfs) #BFS
 print(formatted_solution_output_ucs) #UCS
 print(formatted_solution_output_a_star) #ASS
 print(formatted_solution_output_a_star_sld) #ASSLD
+
+#for Q2.2
+'''
+from collections import deque
+import heapq
+from math import sqrt
+
+goal_state = ('1','2','3','8','_','4','7','6','5') #for spiral pattern with empty center in middle
+
+#DFS
+def dfs(initial_state, limit=30):
+    stack = [(initial_state, [], 0)]  #Stack will include the state, path, and depth
+    visited = set()
+    node_expansions = 0  # Track number of expansions
+
+    while stack:
+        state, path, depth = stack.pop()
+
+        if depth > limit:  #depth limited search
+            continue
+
+        state_tuple = tuple(state)  # Storing tuple version once
+        visited.add(state_tuple)
+
+        if state_tuple == goal_state:  
+            return path, node_expansions  
+
+        node_expansions += 1  # Counting expansions
+        for move, new_state in get_successors(state):  
+            new_state_tuple = tuple(new_state)
+            if new_state_tuple not in visited:
+                stack.append((new_state, path + [move], depth + 1))  
+
+    return None, node_expansions  
+
+# Just defining the possible moves globally overall to avoid redefining in every function call
+MOVE_MAP = {      #for those index shifts
+    'Left': -1,
+    'Up': -3,
+    'Right': 1,
+    'Down': 3
+}
+
+def get_successors(state): #for like finding all of the possible moves from a certain state
+    index = state.index('_')  # finding the empty tile position
+    successors = []
+
+    for move, idx_change in MOVE_MAP.items():
+        new_index = index + idx_change
+
+        # Checking if new index is within bounds
+        if 0 <= new_index < 9:
+            # To prevent moving left when on left edge & right when on right edge
+            if (index % 3 == 0 and move == 'Left') or (index % 3 == 2 and move == 'Right'):
+                continue  
+
+            # this is for directly creating a new state without a separate swap function
+            new_state = list(state)  
+            new_state[index], new_state[new_index] = new_state[new_index], new_state[index]
+
+            # Store move direction and the resulting new state
+            successors.append((move, tuple(new_state)))  # Store as tuple for much better efficiency
+
+    return successors
+
+
+#BFS
+def bfs(initial_state):
+    queue = deque([(initial_state, [])])  
+    visited = set()
+    node_expansions = 0  
+
+    while queue:
+        state, path = queue.popleft()
+        state_tuple = tuple(state)  
+        visited.add(state_tuple)
+
+        if state_tuple == goal_state:  
+            return path, node_expansions  
+
+        node_expansions += 1  
+        for move, new_state in get_successors(state):  
+            new_state_tuple = tuple(new_state)
+            if new_state_tuple not in visited:
+                queue.append((new_state, path + [move]))  
+
+    return None, node_expansions  
+
+#UCS
+def ucs(initial_state):
+    frontier = []  
+    heapq.heappush(frontier, (0, initial_state, []))  
+    visited_cost = {}  
+    node_expansions = 0  
+
+    while frontier:
+        cost, state, path = heapq.heappop(frontier)
+        state_tuple = tuple(state)  
+
+        if state_tuple in visited_cost and visited_cost[state_tuple] <= cost:
+            continue
+        visited_cost[state_tuple] = cost
+
+        if state_tuple == goal_state:  
+            return path, node_expansions  
+
+        node_expansions += 1  
+        for move, new_state in get_successors(state):
+            new_state_tuple = tuple(new_state)
+            new_cost = cost + 1  
+            if new_state_tuple not in visited_cost or new_cost < visited_cost[new_state_tuple]:
+                heapq.heappush(frontier, (new_cost, new_state, path + [move]))
+
+    return None, node_expansions  
+
+# For calculating the Manhattan distance heuristic for a state
+def manhattan_distance(state):
+    # Modified for spiral goal pattern for this question so ADDED
+    index_map = {val: idx for idx, val in enumerate(goal_state)}  #to basically precompute goal positions
+    distance = 0
+    for idx, num in enumerate(state):
+        if num != '_':  # Skipping any empty tile
+            goal_idx = index_map[num]  #for trying to get correct position from goal state
+            distance += abs(idx % 3 - goal_idx % 3) + abs(idx // 3 - goal_idx // 3)  #The Manhattan distance formula
+
+    return distance
+
+
+#A* Search with Manhattan Distance
+def a_star_search(initial_state):
+    frontier = []
+    heapq.heappush(frontier, (0, initial_state, []))  
+    cost_so_far = {tuple(initial_state): 0}  
+    node_expansions = 0  
+
+    while frontier:
+        _, current_state, path = heapq.heappop(frontier)
+        current_tuple = tuple(current_state)  
+
+        if current_tuple == goal_state:  
+            return path, node_expansions  
+
+        node_expansions += 1  
+        for move, new_state in get_successors(current_state):
+            new_state_tuple = tuple(new_state)
+            new_cost = cost_so_far[current_tuple] + 1  
+            if new_state_tuple not in cost_so_far or new_cost < cost_so_far[new_state_tuple]:
+                cost_so_far[new_state_tuple] = new_cost
+                priority = new_cost + manhattan_distance(new_state)
+                heapq.heappush(frontier, (priority, new_state, path + [move]))
+
+    return None, node_expansions  
+
+# Function to calculate the Euclidean distance heuristic for a state that is a straight line
+def straight_line_distance(state):
+    index_map = {val: idx for idx, val in enumerate(goal_state)}  #Trying to precompute goal positions
+    distance = 0
+
+    for idx, num in enumerate(state):
+        if num != '_':  #Skipping empty tile
+            goal_idx = index_map[num]  #For getting correct position from goal state
+            x1, y1 = idx % 3, idx // 3
+            x2, y2 = goal_idx % 3, goal_idx // 3
+            distance += sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)  #Euclidean distance formula
+
+    return distance
+
+
+#A* Search with Euclidean Distance
+def a_star_search_sld(initial_state):
+    frontier = []
+    heapq.heappush(frontier, (0, initial_state, []))  
+    cost_so_far = {tuple(initial_state): 0}  
+    node_expansions = 0  
+
+    while frontier:
+        _, current_state, path = heapq.heappop(frontier)
+        current_tuple = tuple(current_state)  
+
+        if current_tuple == goal_state:  
+            return path, node_expansions  
+
+        node_expansions += 1  
+        for move, new_state in get_successors(current_state):
+            new_state_tuple = tuple(new_state)
+            new_cost = cost_so_far[current_tuple] + 1  
+            if new_state_tuple not in cost_so_far or new_cost < cost_so_far[new_state_tuple]:
+                cost_so_far[new_state_tuple] = new_cost
+                priority = new_cost + straight_line_distance(new_state)
+                heapq.heappush(frontier, (priority, new_state, path + [move]))
+
+    return None, node_expansions  
+
+# fpr running all searches and ofr print node expansions
+start_state = ('2', '8', '1', '_', '5', '3', '6', '7', '4')
+
+dfs_result, dfs_expansions = dfs(start_state)
+bfs_result, bfs_expansions = bfs(start_state)
+ucs_result, ucs_expansions = ucs(start_state)
+a_star_m_result, a_star_m_expansions = a_star_search(start_state)
+a_star_sld_result, a_star_sld_expansions = a_star_search_sld(start_state)
+
+#output
+print("DFS Node Expansions:", dfs_expansions)
+print("BFS Node Expansions:", bfs_expansions)
+print("UCS Node Expansions:", ucs_expansions)
+print("A* Manhattan Node Expansions:", a_star_m_expansions)
+print("A* Euclidean Node Expansions:", a_star_sld_expansions)
+'''
